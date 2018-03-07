@@ -1,0 +1,196 @@
+create table airport(
+airport_code varchar(20) primary key,
+city varchar(20),
+state varchar(20),
+names varchar(20));
+
+create table flight
+( numbered varchar(20) primary key ,
+airline varchar(20),
+weekdays varchar(20));
+
+create table airplane_type
+( type_name varchar(20) primary key,
+max_seats numeric(20),
+company varchar(20)); 
+
+create table canland(
+airport_code varchar(20),
+type_name varchar(20),
+foreign key (airport_code) references airport(airport_code),
+foreign key (type_name) references airplane_type(type_name),
+primary key(airport_code,type_name));
+ 
+create table fare
+(numbered varchar(20),
+code varchar(20),
+amount varchar(20),
+restrictions varchar(20),
+foreign key (numbered) references flight(numbered),
+primary key(numbered,code));
+
+create table airplane(
+airplane_id varchar(20) primary key,
+total_no_of_seats numeric(10),
+type_name varchar(20),
+foreign key (type_name) references airplane_type(type_name)); 
+
+create table flight_leg(
+leg_number numeric(10),
+numbered varchar(20),
+scheduled_dept_time timestamp,
+scheduled_arr_time timestamp,
+dept_airport_code varchar(20),
+arr_airport_code varchar(20),
+foreign key (numbered) references flight(numbered),
+foreign key (dept_airport_code) references airport(airport_code),
+foreign key (arr_airport_code) references airport(airport_code),
+primary key(leg_number,numbered));
+
+
+create table leg_instance
+(
+dated date,
+leg_number numeric(10),
+numbered varchar(20),
+no_of_avail_seats numeric(10),
+dept_airport_code varchar(20),
+arr_airport_code varchar(20),
+arr_time timestamp,
+dept_time timestamp,
+airplane_id varchar(20),
+foreign key (airplane_id) references airplane(airplane_id),
+foreign key (dept_airport_code) references airport(airport_code),
+foreign key (arr_airport_code) references airport(airport_code),
+foreign key (leg_number,numbered) references flight_leg(leg_number,numbered),
+primary key(dated,leg_number,numbered));
+
+create table reservation(
+dated date,
+leg_number numeric(10),
+numbered varchar(20),
+seat_no numeric(7),
+customer_name varchar(20),
+cphone numeric(10),
+foreign key (dated,leg_number,numbered) references leg_instance(dated,leg_number,numbered),
+primary key(dated,leg_number,numbered,seat_no));
+
+
+--inserting values into airport
+insert into airport values(1,'A','AS','ANAME');
+insert into airport values(2,'B','BS','BNAME');
+insert into airport values(3,'M','MS','MNAME');
+insert into airport values(4,'X','XS','XNAME');
+
+--INSERTING VALUES INTO FLIGHT
+insert into flight values(123456,'kingfisher','sunday');
+insert into flight values(234567,'kingfisher','friday');
+insert into flight values(345678,'airindia','monday');
+insert into flight values(34567,'airindia','tuesday');
+insert into flight values(34597,'airindia','wednesday');
+insert into flight values(34507,'airindia','thursday');
+insert into flight values(345637,'airindia','friday');
+insert into flight values(345627,'airindia','saturday');
+insert into flight values(345671,'airindia','sunday');
+ 
+ --insert values into fare
+ insert into fare values(123456,123,300,'only adults');
+ insert into fare values(234567,125,550,'above 15 years');
+insert into fare values(345678,124,200,'congrats');
+insert into fare values(123456,456,150,'Iam least');
+
+ --insert values into airplane_type
+ insert into airplane_type values('BIG',300,'BIGPLANECOMPANY');
+ insert into airplane_type values('SMALL',150,'SMALLPLANECOMPANY');
+ insert into airplane_type values('MEDIUM',250,'MEDIUM PLANECOMPANY');
+
+ --INSERT VALUES INTO CANLAND
+ insert into canland values(4,'BIG');
+ insert into canland values(3,'MEDIUM');
+ insert into canland values(2,'SMALL');
+
+ --INSERT VALUES INTO AIRPLANE
+ insert into airplane values('AIRBUS123',250,'MEDIUM');
+  insert into airplane values('AIRBUS234',120,'SMALL');
+
+  --INSERT VALUES INTO FLIGHT_LEG
+insert into flight_leg values(1,123456,TO_TIMESTAMP('01-JAN-2014 5:30:00 PM'),TO_TIMESTAMP('01-JAN-2014 8:30:00 PM'),4,3);
+insert into flight_leg values(0,234567,'01-FEB-2018 6:20:00 PM','01-FEB-2018 09:50:00 PM',2,3);
+insert into flight_leg values(1,345678,'07-FEB-2018 6:45:09 PM','07-FEB-2018 10:00:00 PM',1,2);
+insert into flight_leg values(2,123456,'04-AUG-2018 6:45:09 PM','04-AUG-2018 10:00:00 PM',1,2);
+
+
+-- INSERT VALUES INTO LEG_INSTANCE
+insert into leg_instance values('01-JAN-2014',1,123456,25,4,3,'01-JAN-2014 10:30:00 PM','01-JAN-2014 05:45:00 PM','AIRBUS123');
+insert into leg_instance values('01-FEB-2018',0,234567,47,2,3,'01-FEB-2018 9:45:00 PM','01-FEB-2018 06:30:00 PM','AIRBUS123');
+-- INSERT VALUES INTO RESERVATION TABLE
+insert into reservation values('01-JAN-2014',1,123456,1,'RAMU',9866258649);
+insert into reservation values('01-JAN-2014',1,123456,2,'RAMU',9866258649);
+insert into reservation values('01-JAN-2014',1,123456,3,'MANIKANTA',986625869);
+insert into reservation values('01-JAN-2014',1,123456,4,'RAMU',9866258649);
+insert into reservation values('01-JAN-2014',1,123456,5,'TEJA',986625649);
+insert into reservation values('01-FEB-2018',0,234567,11,'RAMU',9866258649);
+insert into reservation values('01-FEB-2018',0,234567,12,'MEET',994896719);
+insert into reservation values('01-FEB-2018',0,234567,13,'SAI RAM',994895619);
+
+--QUERY 1
+SELECT CUSTOMER_NAME
+FROM (SELECT CUSTOMER_NAME,COUNT(SEAT_NO) 
+      FROM RESERVATION
+      GROUP BY customer_name
+      HAVING COUNT(SEAT_NO)=(SELECT MAX(COUNT(SEAT_NO))
+                             FROM RESERVATION 
+                             GROUP BY CUSTOMER_NAME));
+
+--QUERY 2
+SELECT NUMBERED
+FROM FLIGHT_LEG 
+WHERE LEG_NUMBER=0
+AND DEPT_AIRPORT_CODE IN (SELECT AIRPORT_CODE FROM AIRPORT WHERE CITY='B')
+AND ARR_AIRPORT_CODE IN (SELECT AIRPORT_CODE FROM AIRPORT WHERE CITY='M');
+
+--QUERY 3
+SELECT NUMBERED
+FROM FARE NATURAL JOIN FLIGHT_LEG
+WHERE DEPT_AIRPORT_CODE IN(SELECT AIRPORT_CODE FROM AIRPORT WHERE CITY='A')
+AND  ARR_AIRPORT_CODE IN(SELECT AIRPORT_CODE FROM AIRPORT WHERE CITY='B')
+AND AMOUNT IN (SELECT MIN(AMOUNT) FROM FARE NATURAL JOIN FLIGHT_LEG));
+
+--QUERY 4
+ SELECT NUMBERED
+ FROM FLIGHT NATURAL JOIN FLIGHT_LEG 
+ WHERE DEPT_AIRPORT_CODE IN(SELECT AIRPORT_CODE from airport  WHERE CITY='A')
+ AND  ARR_AIRPORT_CODE IN(SELECT AIRPORT_CODE from airport  WHERE CITY='B')
+ AND WEEKDAYS IN('sunday','monday','tuesday','wednesday','thursday','friday','saturday');
+
+--QUERY 5
+ SELECT AIRPLANE_ID
+ FROM LEG_INSTANCE 
+ WHERE DEPT_AIRPORT_CODE IN (SELECT AIRPORT_CODE FROM AIRPORT WHERE CITY='X');
+ 
+--QUERY 6
+ SELECT AIRPLANE_ID
+ FROM AIRPLANE 
+ WHERE TOTAL_NO_OF_SEATS>200;
+
+--QUERY 7
+ SELECT SUM(TOTAL_NO_OF_SEATS-NO_OF_AVAIL_SEATS) 
+ FROM AIRPLANE NATURAL JOIN LEG_INSTANCE
+ WHERE DEPT_AIRPORT_CODE IN(SELECT AIRPORT_CODE FROM AIRPORT WHERE CITY='X')
+ AND DATED='01-JAN-2014';
+ 
+--QUERY 8
+ SELECT TYPE_NAME 
+ FROM LEG_INSTANCE NATURAL JOIN AIRPLANE
+ WHERE DEPT_AIRPORT_CODE IN (SELECT AIRPORT_CODE FROM AIRPORT WHERE CITY='X')
+ AND ((DEPT_TIME-TRUNC(DEPT_TIME)) BETWEEN '+00 17:00:00' AND '+00 20:00:00');
+
+ --QUERY 9
+ SELECT COMPANY 
+ FROM AIRPLANE NATURAL JOIN AIRPLANE_TYPE
+ WHERE AIRPLANE_ID='AIRBUS123'; 
+
+ --QUERY 10 
+ SELECT SUM( EXTRACT (HOUR FROM DEPT_TIME-ARR_TIME))
+ FROM LEG_INSTANCE
+ WHERE AIRPLANE_ID='AIRBUS123';
